@@ -15,7 +15,7 @@ class RoomController:
 
         self.fire_timer = 0
         self.fire_triggered = False
-        self.fire_time = random.randint(10, 20)
+        self.fire_time = random.randint(30, 40)
 
         print(f"[CONTROL] Fire scheduled at t={self.fire_time}s")
 
@@ -33,7 +33,7 @@ class RoomController:
                 print("[CONTROL] Fire extinguished")
 
         elif self.state == RoomState.RECOVERY:
-            if sensors.temperature < 26 and sensors.co2 < 600:
+            if sensors.temperature < 26 and sensors.co2 < 450:
                 self.state = RoomState.NORMAL
                 print("[CONTROL] Back to normal")
 

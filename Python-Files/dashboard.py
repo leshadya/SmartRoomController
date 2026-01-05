@@ -121,7 +121,7 @@ while True:
 
                 fig.update_layout(yaxis_title="Temperature (°C)", xaxis_title="Time", hovermode='x unified')
 
-                st.plotly_chart(fig, use_container_width=True, key=f"temp_{unique_id}")
+                st.plotly_chart(fig, width="stretch", key=f"temp_{unique_id}")
 
             with col2:
                 st.subheader("Air Quality & Humidity")
@@ -145,7 +145,7 @@ while True:
                     hovermode='x unified'
                 )
 
-                st.plotly_chart(fig2, use_container_width=True, key=f"co2_{unique_id}")
+                st.plotly_chart(fig2, width="stretch", key=f"co2_{unique_id}")
 
             st.caption(f"Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
