@@ -7,19 +7,21 @@ using uPLibrary.Networking.M2Mqtt.Messages;
 public class SmartRoomController : M2MqttUnityClient
 {
     [Header("Settings")]
-    public string topicToSubscribe = "house/data"; 
-    public string topicToPublish = "house/status";
+    public string topicToSubscribe = "2025_proje_x9z/house/data"; 
+    public string topicToPublish = "2025_proje_x9z/house/status";
 
     [Header("Objects to activate: ")]
-    [SerializeField] OpenableWindow window;
-    [SerializeField] FireAlarmSystem alarmSystem;
-    [SerializeField] Fan fan;
+    public OpenableWindow window;
+    public FireAlarmSystem alarmSystem;
+    public Fan fan;
+    public RoomLight roomLight;
 
     const double FAN_ON_TEMP = 25.0;
     const double FAN_OFF_TEMP = 22.0;
-    const double WINDOW_ON_TEMP = 550.0;
-    const double WINDOW_OFF_TEMP = 500.0;
+    const double WINDOW_ON_TEMP = 450.0;
+    const double WINDOW_OFF_TEMP = 400.0;
 
+    [SerializeField] AutomationToggle autoMode; 
 
     [Serializable]
     public class SensorData
@@ -47,18 +49,19 @@ public class SmartRoomController : M2MqttUnityClient
     protected override void DecodeMessage(string topic, byte[] message)
     {
         // Convert incoming byte data to string
-        string msg = System.Text.Encoding.UTF8.GetString(message);
-        Debug.Log("Received message: " + msg);
+        string jsonData = System.Text.Encoding.UTF8.GetString(message);
+        Debug.Log("Received message: " + jsonData);
 
-        ProcessData(msg);
+        ProcessData(jsonData);
     }
 
-    private void ReportStatus(string mesaj)
+    public void ReportStatus(string message)
     {
         // We convert the message into a byte array and send it.
-        client.Publish(topicToPublish, System.Text.Encoding.UTF8.GetBytes(mesaj));
-        Debug.Log("Message sent: " + mesaj);
+        client.Publish(topicToPublish, System.Text.Encoding.UTF8.GetBytes(message));
+        Debug.Log("Message sent: " + message);
     }
+
     private void ProcessData(string jsonData)
     {
         try
@@ -67,34 +70,38 @@ public class SmartRoomController : M2MqttUnityClient
             SensorData data = JsonUtility.FromJson<SensorData>(jsonData);
 
             UIManager.Instance.time.text = DateTime.Now.ToString();
-            UIManager.Instance.temperature.text = data.temperature.ToString();
-            UIManager.Instance.co2.text = data.co2.ToString();
-            UIManager.Instance.humidity.text = data.humidity.ToString();
+            UIManager.Instance.temperature.text = data.temperature.ToString("F1");
+            UIManager.Instance.co2.text = ((int)data.co2).ToString();
+            UIManager.Instance.humidity.text = data.humidity.ToString("F1");
             UIManager.Instance.fireWarningPanel.SetActive(data.smoke == 1);
 
-            //FAN
-            if (!fan.IsFanOn && data.temperature >= FAN_ON_TEMP)
+            if (autoMode.isOn)
             {
-                fan.IsFanOn = true;
-                ReportStatus("fan_on");
-            }
-            else if (fan.IsFanOn && data.temperature <= FAN_OFF_TEMP)
-            {
-                fan.IsFanOn = false;
-                ReportStatus("fan_off");
-            }
+                //FAN
+                if (!fan.IsFanOn && data.temperature >= FAN_ON_TEMP)
+                {
+                    fan.IsFanOn = true;
+                    ReportStatus("fan_on");
+                }
+                else if (fan.IsFanOn && data.temperature <= FAN_OFF_TEMP)
+                {
+                    fan.IsFanOn = false;
+                    ReportStatus("fan_off");
+                }
 
-            //WINDOW
-            if (!window.isOpen && data.co2 > WINDOW_ON_TEMP)
-            {
-                window.Open();
-                ReportStatus("window_open");
+                //WINDOW
+                if (!window.isOpen && data.co2 > WINDOW_ON_TEMP)
+                {
+                    window.Open();
+                    ReportStatus("window_open");
 
-            }
-            else if(window.isOpen && data.co2 > WINDOW_OFF_TEMP)
-            {
-                window.Close(); 
-                ReportStatus("window_close");
+                }
+                else if (window.isOpen && data.co2 < WINDOW_OFF_TEMP)
+                {
+                    window.Close();
+                    ReportStatus("window_close");
+
+                }
 
             }
 
@@ -103,14 +110,15 @@ public class SmartRoomController : M2MqttUnityClient
             {
                 alarmSystem.SetAlarmState(true);
                 ReportStatus("alarm_on");
-                
+
             }
-            else if(alarmSystem.isAlarmActive && data.smoke == 0)
+            else if (alarmSystem.isAlarmActive && data.smoke == 0)
             {
                 alarmSystem.SetAlarmState(false);
                 ReportStatus("alarm_off");
-               
+
             }
+
 
         }
         catch (Exception e)
