@@ -91,7 +91,7 @@ public class SmartRoomController : M2MqttUnityClient
                 ReportStatus("window_open");
 
             }
-            else if(window.isOpen && data.co2 > WINDOW_OFF_TEMP)
+            else if(window.isOpen && data.co2 < WINDOW_OFF_TEMP)
             {
                 window.Close(); 
                 ReportStatus("window_close");
